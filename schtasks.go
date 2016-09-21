@@ -67,7 +67,6 @@ func Get(taskName string) (ScheduledTask, error) {
 	tasks := []ScheduledTask{}
  	err = gocsv.Unmarshal(bytes.NewReader(out), &tasks)
 	if err != nil {
-		fmt.Println(err)
         return ScheduledTask{}, err
     }
 
