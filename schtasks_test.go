@@ -8,7 +8,10 @@ import (
 var taskName = "Schtasks Test"
 
 func TestRunEveryMinutes(t *testing.T) {
-	RunEveryMinutes(taskName, 1, "dir")
+	_, err := RunEveryMinutes(taskName, 5, "dir")
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestGet(t *testing.T) {

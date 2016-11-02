@@ -82,6 +82,7 @@ func RunEveryMinutes(taskName string, m int, command string) ([]byte, error) {
 		"/mo", strconv.Itoa(m),
 		"/f",
 		"/tn", taskName,
-		"/tr", command).Output()
+		"/tr", command,
+		"/ru", "SYSTEM").Output()
 	return out, err
 }
