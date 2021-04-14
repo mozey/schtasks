@@ -37,8 +37,9 @@ Run the task every minute
     schtasks /create /sc minute /mo 1 /f /tn "Schtasks Test" /tr dir /ru System
 
 Run the task once at HH:MM
+[Example](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/schtasks-create#to-schedule-to-run-once)
 
-    schtasks /create /sc once /mt 14:00 /f /tn "Schtasks Test" /tr dir /ru System
+    schtasks /create /sc once /st 14:29 /f /tn "Schtasks Test" /tr dir /ru System
     
 Query task by name
 

@@ -116,7 +116,7 @@ func RunAtMinutes(taskName string, m int, command string) ([]byte, error) {
 	out, err := exec.Command(
 		Path, "/create",
 		"/sc", "once",
-		"/mt", TimeAtMinutes(time.Now().Local(), m),
+		"/st", TimeAtMinutes(time.Now().Local(), m),
 		"/f",
 		"/tn", taskName,
 		"/tr", command,
