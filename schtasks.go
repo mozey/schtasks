@@ -2,17 +2,20 @@
 package schtasks
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/gocarina/gocsv"
+	"github.com/pkg/errors"
 	"os/exec"
 	"strconv"
-	"github.com/gocarina/gocsv"
-	"bytes"
-	"errors"
-	"fmt"
+	"time"
 )
 
-// TODO Use %windir% to construct path?
-// For now just export the variable to allow override
-var SchtasksPath = "c:\\Windows\\System32\\schtasks.exe"
+// Path to schtasks.exe, caller can override according to %windir% if required
+var Path = "c:\\Windows\\System32\\schtasks.exe"
+
+// PaddingSeconds for RunAtMinutes
+var PaddingSeconds = 5
 
 type ScheduledTask struct {
 	HostName                     string `csv:"HostName"`
@@ -48,27 +51,32 @@ type ScheduledTask struct {
 // ForceDelete deletes a task even if it is currently running
 func ForceDelete(taskName string) ([]byte, error) {
 	out, err := exec.Command(
-		SchtasksPath, "/delete", "/f",
+		Path, "/delete", "/f",
 		"/tn", taskName).Output()
-	return out, err
+	return out, errors.WithStack(err)
 }
 
 // Get the specified task name
 func Get(taskName string) (ScheduledTask, error) {
 	out, err := exec.Command(
-		SchtasksPath, "/query",
+		Path, "/query",
 		"/v", "/tn", taskName,
 		"/fo", "csv").Output()
 	if err != nil {
-		return ScheduledTask{}, errors.New(
-			fmt.Sprintf("Task '%s' not found", taskName))
+		return ScheduledTask{}, errors.WithStack(
+			errors.Wrap(err, fmt.Sprintf("task %s not found", taskName)))
 	}
 
-	tasks := []ScheduledTask{}
- 	err = gocsv.Unmarshal(bytes.NewReader(out), &tasks)
+	var tasks []ScheduledTask
+	err = gocsv.Unmarshal(bytes.NewReader(out), &tasks)
 	if err != nil {
-        return ScheduledTask{}, err
-    }
+		return ScheduledTask{}, errors.WithStack(err)
+	}
+
+	if len(tasks) == 0 {
+		return ScheduledTask{}, errors.WithStack(
+			fmt.Errorf("task %s not found", taskName))
+	}
 
 	return tasks[0], nil
 }
@@ -77,12 +85,45 @@ func Get(taskName string) (ScheduledTask, error) {
 func RunEveryMinutes(taskName string, m int, command string) ([]byte, error) {
 	// Create or update a scheduled task
 	out, err := exec.Command(
-		SchtasksPath, "/create",
+		Path, "/create",
 		"/sc", "minute",
 		"/mo", strconv.Itoa(m),
 		"/f",
 		"/tn", taskName,
 		"/tr", command,
 		"/ru", "SYSTEM").Output()
-	return out, err
+	if err != nil {
+		return out, errors.WithStack(err)
+	}
+
+	return out, nil
+}
+
+// TimeAtMinutes adds m minutes to current time,
+// and returns the time string in format HH:MM.
+// Adds PaddingSeconds to make sure the
+// scheduled task before time at.
+// WARNING The correct value to pass in is probably time.Now().Local()
+func TimeAtMinutes(now time.Time, m int) (t string) {
+	timeAt := now.Add(time.Minute*time.Duration(m) +
+		time.Second*time.Duration(PaddingSeconds))
+	return timeAt.Format("15:04")
+}
+
+// RunAtMinutes schedules a task to run once in m minutes (plus or minus 30s)
+func RunAtMinutes(taskName string, m int, command string) ([]byte, error) {
+	// Create or update a scheduled task
+	out, err := exec.Command(
+		Path, "/create",
+		"/sc", "once",
+		"/mt", TimeAtMinutes(time.Now().Local(), m),
+		"/f",
+		"/tn", taskName,
+		"/tr", command,
+		"/ru", "SYSTEM").Output()
+	if err != nil {
+		return out, errors.WithStack(err)
+	}
+
+	return out, nil
 }
