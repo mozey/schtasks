@@ -17,7 +17,7 @@ func TestRunEveryMinutes(t *testing.T) {
 	// Get task to verify it was created
 	st, err := Get(taskName)
 	require.NoError(t, err)
-	require.Equal(t, taskName, st.TaskName)
+	require.Contains(t, st.TaskName, taskName)
 
 	// Delete the task
 	_, err = ForceDelete(taskName)
@@ -67,7 +67,7 @@ func TestRunAtMinutes(t *testing.T) {
 	// Get task to verify it was created
 	st, err := Get(taskName)
 	require.NoError(t, err)
-	require.Equal(t, taskName, st.TaskName)
+	require.Contains(t, st.TaskName, taskName)
 
 	// Delete the task
 	_, err = ForceDelete(taskName)
